@@ -1,0 +1,15 @@
+{
+  "name": "nongojs",
+  "version": "1.0.0",
+  "description": "Project MVC of NodeJs based in django orm",
+  "main": "main.js",
+  "dependencies": {
+    "express": "^4.14.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test"
+  },
+  "author": "German Alzate",
+  "license": "ISC"
+}
