@@ -3,13 +3,11 @@
 var fs = require('fs');  // this engine requires the fs module
 var settings = require('./settings');
 var utils = require('./utils');
+var Engine = require('./template/engine');
 
 const BASE_MATCH = '{{\\s*(\\w+\\.*)+\\s*}}';
 const MATCH = new RegExp(BASE_MATCH, 'g');  // /{{\s*(\w+\.*)+\s*}}/g;
 
-class Resolver {
-
-}
 
 function resolve_in (string) {
     let new_string = string.replace('{{', '').replace('}}', '');
@@ -46,25 +44,29 @@ module.exports.engine = function (path, options, callback) {  // define the temp
         // this is an extremely simple template engine
         var _content = content.toString(settings.ENCODING);
 
-        let coincidences = _content.match(MATCH);
+        var template = new Engine(_content);
+        var rendered = template.render(options);
+        // let coincidences = _content.match(MATCH);
+        //
+        // var rendered = _content;
+        //
+        // if (coincidences.length) {
+        //     for (var coincidence of coincidences) {
+        //         try {
+        //             var resolved = resolve_in(coincidence);
+        //             let new_pattern = new RegExp(BASE_MATCH.replace('\\w+\\.*', resolved), 'g');
+        //             let variable = resolve_variable(coincidence, options);
+        //             rendered = rendered.replace(new_pattern, variable);
+        //         } catch (err) {
+        //             if (settings.DEBUG) {
+        //                 console.error(`Can't resolve ${resolved}`);
+        //             }
+        //             continue;
+        //         }
+        //     }
+        // }
 
-        var rendered = _content;
 
-        if (coincidences.length) {
-            for (var coincidence of coincidences) {
-                try {
-                    var resolved = resolve_in(coincidence);
-                    let new_pattern = new RegExp(BASE_MATCH.replace('\\w+\\.*', resolved), 'g');
-                    let variable = resolve_variable(coincidence, options);
-                    rendered = rendered.replace(new_pattern, variable);
-                } catch (err) {
-                    if (settings.DEBUG) {
-                        console.error(`Can't resolve ${resolved}`);
-                    }
-                    continue;
-                }
-            }
-        }
 
         return callback(null, rendered)
     })

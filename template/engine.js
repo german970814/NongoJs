@@ -23,7 +23,7 @@ const BLOCK_TOKEN_END = '%}';
 //     __(BLOCK_TOKEN_START), __(BLOCK_TOKEN_END)
 // ), 'g');
 
-const WHITESPACE = /\s/g;
+const WHITESPACE = /\s/g;  // /\s*/[Symbol.split](string);
 
 
 class Regex extends RegExp {
@@ -47,8 +47,8 @@ var operator_lookup_table = {
     '>=': operator.ge
 }
 
-if (!String.prototype.get_value) {
-    String.prototype.get_value = function () {
+if (!String.prototype._as_fragment) {
+    String.prototype._as_fragment = function () {
         return this.substr(2).slice(0, -2).strip();
     }
 }
@@ -81,12 +81,12 @@ class _Fragment {
     constructor (raw_text) {
         this.raw = raw_text;
         this.clean = this.clean_fragment();
-        this.type = this._type();
+        this.type = this._type();  // property to define the fragment type
     }
 
     clean_fragment() {
         if (new Array(VAR_TOKEN_START, BLOCK_TOKEN_START).contains(this.raw.substr(0, 2))) {
-            return this.raw.strip().get_value();  // llama la funcion prototype creada
+            return this.raw.strip()._as_fragment();  // llama la funcion prototype creada
         }
         return this.raw;
     }
@@ -267,6 +267,7 @@ class _If extends _ScopableNode {
     }
 
     split_children () {
+        /* Puede mejorar si se hace el singleton con un this.split_children para evitar entrar dos veces a hacer lo mismo*/
         let if_branch = new Array();
         let else_branch = new Array();
         let curr = if_branch;
@@ -375,11 +376,17 @@ class _Text extends _Node {
 
 
 class Compiler {
+    /* Compiler of template engine, this class resolve the nodes. */
+
     constructor (template_string) {
         this.template_string = template_string;
     }
 
     *each_fragment () {
+        /*
+          generator for fragments,
+          each match found with the TOKEN_REGEX will be a fragment object
+        */
         for (var fragment of this.template_string.split(TOKEN_REGEX)) {
             if (fragment) {
                 yield new _Fragment(fragment);
@@ -388,26 +395,26 @@ class Compiler {
     }
 
     compile () {
-        let root = new _Root();
-        let scope_stack = new Array(root);
+        let root = new _Root();  // create the root node
+        let scope_stack = new Array(root);  // add the root an a array
 
         for (var fragment of this.each_fragment()) {
             if (!scope_stack) {
                 throw new Error('Nesting issues');
             }
 
-            let parent_scope = scope_stack[scope_stack.length - 1];
+            let parent_scope = scope_stack[scope_stack.length - 1];  // get the last node;
             if (fragment.type == CLOSE_BLOCK_FRAGMENT) {
-                parent_scope.exit_scope();
-                scope_stack.pop();
+                parent_scope.exit_scope();  // exit of the last node
+                scope_stack.pop();  // pop out the node of stack
                 continue;
             }
-            var new_node = this.create_node(fragment);
+            var new_node = this.create_node(fragment);  // crete the node
             if (new_node) {
-                parent_scope.children.push(new_node);
-                if (new_node.creates_scope) {
-                    scope_stack.push(new_node);
-                    new_node.enter_scope()
+                parent_scope.children.push(new_node);  // add node as children of last node
+                if (new_node.creates_scope) {  // if node create nodes
+                    scope_stack.push(new_node);  // add node to stack
+                    new_node.enter_scope()  // fires enter_scope method
                 }
             }
         }
@@ -457,12 +464,15 @@ class Compiler {
 
 
 class Template {
+    /* Template class, this class buil the root node and compile it. */
+
     constructor (contents) {
         this.contents = contents;
-        this.root = new Compiler(contents).compile();
+        this.root = new Compiler(contents).compile();  // main node
     }
 
     render (options) {
+        /* Render the content. */
         return this.root.render(options);
     }
 }
